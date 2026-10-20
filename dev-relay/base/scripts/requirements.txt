@@ -1,0 +1,10 @@
+# ===== SYNTHESIZED (inferred, NOT from screenshots) =====
+# This file was NOT captured in the reconstruction screenshots. It is inferred
+# from: (1) base/README.md "Install Framework Runtime Dependencies" which runs
+# `python -m pip install -r .github/scripts/requirements.txt`, and (2) the only
+# third-party import anywhere in the captured Python (resolve-config.py imports
+# PyYAML behind an import guard; diff-deva.py and the other diagnostics use only
+# the standard library). Replace with the real file if a screenshot surfaces.
+# The exact pinned version is unknown; a conservative floor is used.
+PyYAML>=6.0
+# ===== END SYNTHESIZED =====

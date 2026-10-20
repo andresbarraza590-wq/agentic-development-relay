@@ -1,0 +1,270 @@
+# Org-Wide Default Configuration — AI Agent Pipeline Baseline
+# =================================================================
+# This file defines non-negotiable org standards inherited by ALL teams.
+# Teams CANNOT override guardrail rules or lower quality thresholds.
+# Teams CAN override permitted configuration and documentation values.
+# Repository membership comes only from repo-inventory.json.
+#
+# INSTALL-PROTECTED (company-wide): this file is base-authoritative and must
+# never be shipped or overridden by any overlay tier (workspace, repo, or
+# local). The installer keeps the base copy and ignores an overlay copy. Teams
+# customize only through team-config.yaml (the runtime deep-merge of allowed
+# keys) and agent-commands.yaml — never by replacing this file.
+#
+# Runtime resolution:
+#   1. Setup Validator invokes the configuration-resolution skill.
+#   2. The skill deep-merges team-config.yaml on top of this baseline.
+#   3. The skill publishes one validated snapshot for all consumers.
+#
+# Location: ingress_ai_agents/base/config/default-config.yaml  (check into the shared repo)
+
+# ---------------------------------------------------------------
+# Configuration Resolution — workspace-scoped runtime snapshot
+# ---------------------------------------------------------------
+# This section is resolver-owned and cannot be overridden by team-config.yaml.
+config_resolution:
+  schema_version: 1
+  resolved_file: ".github/cache/config/resolved-config.json"
+
+# ---------------------------------------------------------------
+# Public / Private Boundary — DO NOT LEAK TEAM DATA INTO THIS REPO
+# ---------------------------------------------------------------
+# This file ships in the PUBLIC base repo (ingress_ai_agents), readable by
+# anyone. All team-specific data — routing tables, domain agents, repo lists,
+# team names, and commands — belongs ONLY in the PRIVATE overlay repo,
+# delivered through team-config.yaml. Three rules keep the boundary intact:
+#   1. Keys, not literals — reference config keys resolved at runtime; never
+#      hardcode a team name, repo, framework, or domain-agent name here.
+#   2. Placeholders only — examples show the "shape" of a setting, never a real
+#      team's values.
+#   3. Degrade gracefully — every extension point defaults to empty and falls
+#      back to generic behavior, so the public base works standalone.
+
+# ---------------------------------------------------------------
+# Command Manifest — deterministic build/test/lint/coverage commands
+# ---------------------------------------------------------------
+# Agents read concrete commands from a manifest instead of guessing.
+# The base ships the resolution rule (mechanism); the real commands live at the
+# invariant install path .github/config/agent-commands.yaml (data). A workspace
+# can hold one or many repositories. That `.github/` sits at the workspace root
+# (<workspace>/.github) when one install covers the whole workspace, or at a repo
+# root (<workspace>/<repo>/.github) when repositories are installed individually.
+commands:
+  resolution: >
+    Each key has three states: a command string runs as-is; an empty value ("")
+    means not configured — ask the developer, never guess; the value `skip` means
+    the step does not apply in this scope (for example, build or lint
+    for a plain Python project) — skip it silently. The `test` key is the exception:
+    it never permits `skip` and requires a concrete passing test command. If the
+    whole manifest is absent, ask the developer.
+
+# ---------------------------------------------------------------
+# Governance Guardrails — single source of truth in guardrails.yaml
+# ---------------------------------------------------------------
+# The full governance block — the never/always rules, quality thresholds, loop
+# budgets, and the categorized safety taxonomy (AH/PIT/PII/TQ/LOOP) — lives
+# SOLELY in .github/config/guardrails.yaml so it cannot drift across two files. Agents
+# read governance directly from guardrails.yaml. This file carries only
+# operational configuration (commands, MCP servers, extensions, IDE
+# prerequisites, style defaults, and architecture context). Teams cannot add, remove,
+# override, or weaken governance through team-config.yaml.
+
+# ---------------------------------------------------------------
+# MCP Servers — Org-required integrations (validated at Step 0a)
+# Teams may add additional MCP servers in team-config.yaml under
+# mcp_servers.additional — these are merged in at runtime. The same overlay must
+# replace setup-validator.agent.md with a semantic superset whose tools
+# frontmatter exposes every added server family.
+# ---------------------------------------------------------------
+mcp_servers:
+  jira:
+    prefix: "mcp_110128-jet-ji"
+    test_call: "getJiraInstancesAndProjectsForCurrentUser"
+    required: true
+    description: "Jira MCP — read/update tickets, comments, transitions"
+  gt_assist:
+    prefix: "mcp_GTAssist"
+    test_call: "ListUsecases"
+    required: false
+    description: "<INTERNAL_KNOWLEDGE_ASSISTANT> — strongly recommended internal-document enrichment; non-blocking, so a failed probe degrades gracefully (see .github/docs/TROUBLESHOOTING.md)"
+  wiki:
+    prefix: "110128-jet-confluence-mcp-server"
+    test_call: "searchConfluence"
+    required: false
+    description: "Confluence Wiki MCP — internal documentation, policies, architecture (strongly recommended)"
+  stackoverflow:
+    prefix: "110128-jet-stackoverflow-mcp-server"
+    test_call: "stackoverflow_connection_status"
+    required: false
+    description: "Stack Overflow MCP — internal Q&A, SME answers, code examples (strongly recommended)"
+
+# A cached PASS is reusable only while it is fresh and its setup inputs still
+# match. Explicit presence markers distinguish missing files from all contents.
+setup_validation:
+  cache_ttl_hours: 744          # 31 days
+  timeouts:
+    mcp_initialize_seconds: 30       # host startup/protocol initialization
+    mcp_method_seconds: 30           # one functional MCP method
+    mcp_server_seconds: 60           # all checks for one MCP family
+    sage_command_seconds: 20         # one search_docs process
+    external_phase_seconds: 180      # all MCP and <BASE_ENGINEERING_ECOSYSTEM> validation
+  fingerprint_inputs:
+    - ".github/config/default-config.yaml"
+    - ".github/config/team-config.yaml"
+    - ".github/config/guardrails.yaml"
+    - ".github/config/agent-commands.yaml"
+    - ".github/agents/setup-validator.agent.md"
+    - ".vscode/settings.json"
+
+# ---------------------------------------------------------------
+# VS Code Extensions — Advisory Suggestions
+# ---------------------------------------------------------------
+# Extension availability should not block the pipeline.
+required_extensions:
+  always: []                   # no extension-based blockers
+  recommended:                 # suggestions only
+    - github.copilot
+    - github.copilot-chat
+    - hashicorp.terraform
+    - streetsidesoftware.code-spell-checker
+
+# ---------------------------------------------------------------
+# IDE Prerequisites — AI co-author tagging baseline (validated at Step 0a)
+# ---------------------------------------------------------------
+ide_prerequisites:
+  ai_coauthor:
+    required: true
+    required_mode: "all"
+    vscode:
+      setting_key: "git.addAICoAuthor"
+      accepted_values: ["all"]
+      required_value: "all"
+      repository_enforcement_file: ".vscode/settings.json"
+    intellij:
+      plugin_name: "GitHub Copilot"
+      accepted_enforcement_modes:
+        - "ide_native"
+        - "commit_template"
+        - "commit_hook"
+      repository_fallback_files:
+        - ".gitmessage"
+        - ".githooks/commit-msg"
+
+# ---------------------------------------------------------------
+# Language Style Conventions
+# These general-purpose defaults keep the base usable without an overlay.
+# Explicit repository conventions take precedence. Teams may override any
+# coding key in team-config.yaml through the normal deep merge.
+# ---------------------------------------------------------------
+language_style_defaults:
+  coding:
+    docstring_style: google
+    naming:                      # Java-style naming fallback
+      classes: PascalCase
+      functions: camelCase
+      variables: camelCase
+      constants: UPPER_SNAKE_CASE
+  terraform:                     # IaC-specific conventions
+    naming:
+      resources: snake_case
+      variables: snake_case
+      modules: snake_case
+
+# ---------------------------------------------------------------
+# Documentation Enrichment
+# Empty by default so base-only intake remains functional without an overlay.
+# ---------------------------------------------------------------
+documentation:
+  architecture: []
+
+# ---------------------------------------------------------------
+# Story Refinement Scorecard
+# ---------------------------------------------------------------
+story_refinement:
+  required_fields:
+    - acceptance_criteria
+    - description
+  scored_criteria:
+    - name: "AC is testable"
+      weight: high
+      check: "Contains specific, measurable criteria (when/then, must, should)"
+      fail_words: ["appropriate", "proper", "adequate", "as needed", "etc."]
+    - name: "Scope defined"
+      weight: high
+      check: "Description contains objective or scope section"
+    - name: "Out of scope defined"
+      weight: medium
+      check: "Explicit exclusions mentioned"
+    - name: "Story points assigned"
+      weight: low
+      check: "Story points field is non-null"
+    - name: "Sprint assigned"
+      weight: low
+      check: "Sprint field is non-null"
+    - name: "Epic linked"
+      weight: medium
+      check: "Epic link present"
+    - name: "Dependencies noted"
+      weight: medium
+      check: "Description mentions dependencies or blockers"
+  pass_threshold: 0.6
+
+# ---------------------------------------------------------------
+# Architecture Context — auto-maintained architecture metadata (implementation)
+# ---------------------------------------------------------------
+# implementation-partner reads a machine-readable architecture description
+# before coding so it respects existing boundaries, data-flow directions, and
+# integration points. The architecture-bootstrapper stage (Step 0b) creates the
+# artifact when absent and owns all pipeline refreshes via the architecture-diagram
+# skill; implementation-partner reads the artifact and reports suspected deltas.
+architecture:
+  # When true, implementation-partner loads architecture context before the implement stage
+  # and reports architecture-significant deltas to the owning architecture stage.
+  auto_context: true
+  # Canonical, machine-readable artifact the agent consumes (workspace .github/).
+  metadata_file: ".github/artifacts/architecture-metadata.json"
+  # Trigger: bootstrap when the artifact is missing; refresh when the assigned
+  # scope touches an architecture-significant surface (new/removed dependency,
+  # external integration, service boundary, infrastructure/IaC, schema/auth);
+  # otherwise just read the existing metadata. Supported values are
+  # architecture-significant-change, any-change, and manual.
+  refresh_on: "architecture-significant-change"
+  # ---------------------------------------------------------------
+  # Smart drift scan — architecture-bootstrapper (Step 0b), present-metadata case
+  # ---------------------------------------------------------------
+  # When architecture metadata already exists, the bootstrapper delegates a
+  # read-only drift assessment to the architecture-diagram skill's `assess`
+  # mode, which compares each in-scope repository's declared default-branch tip against the
+  # last-scanned commit recorded in the VCS baseline manifest. The heuristic
+  # below decides whether accumulated drift is large enough to propose a
+  # refresh. All thresholds are team-overridable in team-config.yaml.
+  drift_scan:
+    # Master switch for normal commit/path drift. When false, verified metadata is
+    # a no-op; legacy deep-discovery without complete coverage still
+    # requires a consent-gated baseline refresh before it can be trusted.
+    enabled: true
+    # VCS baseline manifest the skill writes on bootstrap/refresh and reads on
+    # assess. One record per in-scope repo: default branch + last-scanned commit.
+    baseline_manifest: ".github/artifacts/repo-inventory.json"
+    # Drift is significant when ANY of the three signals below fires. Signals are
+    # scoped to repositories the manifest marks; repos whose baseline
+    # commit is a placeholder or unreadable are indeterminate and excluded.
+    # Signal 1 — total changed files across in-scope repos since the baseline.
+    changed_files_threshold: 25
+    # Signal 2 — number of in-scope repos whose declared default-branch tip moved off the baseline.
+    changed_repos_threshold: 3
+    # Signal 3 — any stack-neutral architecture surface changed since the baseline.
+    # The architecture skill discovers project-native dependency and build
+    # manifests from repository configuration. Teams extend this list with their
+    # application-stack-specific paths in team-config.yaml.
+    significant_paths:
+      - "**/*.tf"
+      - "**/Dockerfile*"
+      - "**/schema*"
+      - "**/*openapi*"
+      - "**/*asyncapi*"
+      - "**/*api-contract*"
+    # Require developer consent (continue/skip) before refreshing on drift. The
+    # bootstrapper never opens a dialog: it returns the consent request as its
+    # final message and refreshes only after an explicit continue.
+    require_consent: true

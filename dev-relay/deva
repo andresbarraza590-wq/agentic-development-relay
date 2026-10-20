@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# deva - POSIX shim so a bare 'deva' works in Git Bash / MSYS / WSL, where the
+# shell does not use PATHEXT to resolve 'deva' -> 'deva.bat'. All dispatch
+# (reserved verbs vs install.bat passthrough) stays in the sibling deva.bat.
+here="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+
+case "$(uname -r 2>/dev/null)" in
+  *[Mm]icrosoft*|*[Ww][Ss][Ll]*)
+    if ! command -v cmd.exe >/dev/null 2>&1 || ! command -v wslpath >/dev/null 2>&1; then
+      printf '%s\n' "[deva] ERROR: WSL interoperability requires cmd.exe and wslpath." >&2
+      exit 1
+    fi
+    batch_path="$(wslpath -w "$here/deva.bat")" || exit $?
+    cmd.exe /d /s /c call "$batch_path" "$@"
+    exit $?
+    ;;
+esac
+
+"$here/deva.bat" "$@"
+exit $?

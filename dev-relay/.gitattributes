@@ -1,0 +1,29 @@
+# ===== SYNTHESIZED (inferred, NOT from screenshots) =====
+# .github/.gitattributes was listed in the explorer tree (Capture.PNG) but its
+# contents were never captured. The rules below are inferred from the framework's
+# cross-platform nature (Windows .bat/.ps1 launchers plus POSIX .sh git hooks that
+# MUST keep LF line endings to run). Replace with the real file if a screenshot
+# surfaces.
+
+# Normalize line endings; let Git decide text vs binary by default.
+* text=auto
+
+# POSIX shell scripts and the extensionless launcher must stay LF, or the hooks
+# and the Git Bash / WSL shim break on checkout.
+*.sh    text eol=lf
+deva    text eol=lf
+
+# Windows scripts stay CRLF.
+*.bat   text eol=crlf
+*.ps1   text eol=crlf
+
+# Keep YAML/Markdown/JSON as LF for stable diffs.
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.py    text eol=lf
+
+# Binary assets.
+*.png   binary
+# ===== END SYNTHESIZED =====

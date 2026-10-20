@@ -1,0 +1,38 @@
+# agent-commands.yaml — command manifest for one framework install
+# =================================================================
+# Agents read these commands instead of guessing build/test/lint steps.
+# Fill in the concrete commands for the code this install covers. Leave a value
+# empty to have the agent ask the developer at runtime rather than guess.
+#
+# INSTALL SCOPE — where this file lives
+#   A workspace can hold one or many git repositories. The framework installs
+#   into a `.github/` directory and this manifest lives in its config folder as
+#   `.github/config/agent-commands.yaml`. That `.github/` can be at either level:
+#     * Workspace-level install -> <workspace>/.github/config/agent-commands.yaml
+#       Use when one install covers the whole repo, a single repo, or
+#       several repos that share the same build/test/lint commands.
+#     * Repo-level install      -> <workspace>/<repo>/.github/config/agent-commands.yaml
+#       Use when repositories in the workspace have different toolchains;
+#       each repo then carries its own manifest.
+#   The commands below describe the commands covered by THIS install's scope.
+#
+# This starter ships generic and empty. Team- or repo-specific commands belong
+# HERE, not in the public base skills or agents.
+# Python is used below only as an illustrative example of when a command may
+# not apply; it does not establish Python as the default project language.
+#
+# Resolution rule (see default-config.yaml -> commands.resolution):
+#   Each value has three states:
+#     "<command>" -> run this command
+#     ""  (empty) -> not configured yet; ask the developer at runtime
+#     skip        -> step does not apply in this scope; skip it silently
+#                    (e.g. build or lint for a plain Python project)
+#   If the whole manifest is absent, ask the developer.
+
+commands:
+  build: ""              # "" = ask; skip = no build step (e.g. Python)
+  test: ""              # "" = ask; skip not allowed - a concrete passing test command is required
+  integration_test: ""  # "" = ask; skip = no integration/e2e suite
+  lint: ""              # "" = ask; skip = no linter
+  coverage: ""          # "" = ask; skip
+  run: ""              # "" = ask; skip = not a runnable service
